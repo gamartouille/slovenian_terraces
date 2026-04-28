@@ -1,0 +1,128 @@
+        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;600&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; }
+        html, body, #map { height: 100%; margin: 0; }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            position: absolute;
+            top: 0; right: 0; bottom: 0;
+            width: 290px;
+            background: #0f0f0f;
+            border-left: 1px solid #2a2a2a;
+            padding: 16px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        #sidebar h3 {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            margin-bottom: 12px;
+            color: #f5f5f0;
+            letter-spacing: 0.04em;
+        }
+        .layer-item { padding: 10px 8px; border-radius: 5px; margin-bottom: 8px; background: #1a1a1a; }
+        .layer-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .layer-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+        .layer-badge {
+            font-family: 'DM Mono', monospace; font-size: 9px;
+            padding: 2px 5px; border-radius: 3px;
+            background: #2a2a2a; color: #777;
+            letter-spacing: 0.05em; flex-shrink: 0;
+        }
+        .layer-badge.gpkg   { color: #6aff8e; }
+        .layer-badge.shp    { color: #e9c46a; }
+        .layer-badge.arcgis { color: #8ecae6; }
+        .layer-item input[type="checkbox"] { margin: 0; cursor: pointer; flex-shrink: 0; }
+        .layer-item label { flex: 1; font-size: 12px; color: #f5f5f0; cursor: pointer; }
+        .layer-bottom { display: flex; align-items: center; gap: 8px; }
+        .opacity-label {
+            font-family: 'DM Mono', monospace; font-size: 10px;
+            color: #555; flex-shrink: 0; width: 28px; text-align: right;
+        }
+        .layer-bottom input[type="range"] { flex: 1; accent-color: #6aff8e; cursor: pointer; }
+
+        /* ── Tooltip ── */
+        #tooltip {
+            position: absolute;
+            z-index: 20;
+            pointer-events: none;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 10px 13px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+            min-width: 200px;
+            max-width: 260px;
+            display: none;
+        }
+        #tooltip .tt-title {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: #6aff8e;
+            margin-bottom: 7px;
+            letter-spacing: 0.04em;
+        }
+        #tooltip .tt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            padding: 2px 0;
+            border-bottom: 1px solid #1e1e1e;
+        }
+        #tooltip .tt-row:last-child { border-bottom: none; }
+        #tooltip .tt-key {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: #666;
+            flex-shrink: 0;
+        }
+        #tooltip .tt-val {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: #f5f5f0;
+            text-align: right;
+        }
+        #tooltip .tt-section {
+            font-family: 'DM Mono', monospace;
+            font-size: 9px;
+            color: #444;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin: 6px 0 3px;
+        }
+
+        /* ── Toast & Spinner ── */
+        #toast {
+            position: relative; bottom: 32px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 20; padding: 10px 18px;
+            background: #0f0f0f; color: #f5f5f0;
+            border-left: 3px solid #6aff8e; border-radius: 4px;
+            font-family: 'DM Mono', monospace; font-size: 12px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            max-width: 360px; text-align: center;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #toast.error { border-left-color: #ff6a6a; }
+
+        #spinner {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30; display: none;
+            flex-direction: column; align-items: center; gap: 14px;
+            background: rgba(15,15,15,0.88); padding: 28px 36px;
+            border-radius: 8px; border: 1px solid #2a2a2a; backdrop-filter: blur(6px);
+        }
+        #spinner.active { display: flex; }
+        .spin-ring {
+            width: 32px; height: 32px;
+            border: 2.5px solid #2a2a2a; border-top-color: #6aff8e;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #spinner p { font-family: 'DM Mono', monospace; font-size: 12px; color: #aaa; letter-spacing: 0.05em; }
