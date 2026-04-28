@@ -1,0 +1,25 @@
+{
+  "name": "slovenian_terraces",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/gamartouille/slovenian_terraces#readme",
+  "bugs": {
+    "url": "https://github.com/gamartouille/slovenian_terraces/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gamartouille/slovenian_terraces.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "vite": "^8.0.10"
+  }
+}
