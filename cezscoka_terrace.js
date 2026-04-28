@@ -1,7 +1,7 @@
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
-    { url: './GPKG/EMPRISE_TERRACE2.zip', name: 'Emprise Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
-    { url: './SHPFILE/terraces.zip', name: 'Terrasses individuelles', color: '#e6dd8e', borderColor: '#219ebc' },
+    { url: './GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
+    { url: './SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
     { url: "./GPKG/MNT.zip", name: "MNT" },
     // { url: 'https://services.arcgis.com/.../FeatureServer/0', name: 'Couche ArcGIS' },
 ];
@@ -10,7 +10,7 @@ const AUTOLOAD_FILES = [
 // La clé doit correspondre exactement au nom de la couche (name: ci-dessus).
 // Si une couche n'est pas listée ici, tous ses champs s'affichent.
 const TOOLTIP_FIELDS = {
-    'Terrasses individuelles': [
+    'Steep and flat Parts': [
         { section: 'ALTITUDE (m)' },
         { key: 'ALT_MEAN',   label: 'Mean'     },
         { key: 'ALT_MAX',    label: 'Max'         },
@@ -37,6 +37,15 @@ map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
 let layers = [];
 const COLORS = ['#dd0012','#000000','#e9c46a','#f4a261','#457b9d','#ffffff','#ffb703','#8ecae6'];
+
+if (typeof GeoPackage !== 'undefined') {
+    if (typeof GeoPackage.setSqljsWasmLocateFile === 'function') {
+        GeoPackage.setSqljsWasmLocateFile('https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/sql-wasm.wasm');
+    }
+    if (typeof GeoPackage.setCanvasKitWasmLocateFile === 'function') {
+        GeoPackage.setCanvasKitWasmLocateFile('https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/canvaskit.wasm');
+    }
+}
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 function showToast(msg, isError = false) {
@@ -261,20 +270,56 @@ function getFormat(url, forcedType) {
     const clean = url.split('?')[0].toLowerCase();
     const ext = clean.split('.').pop();
     if (ext === 'gpkg') return 'gpkg';
-    if (ext === 'zip' || ext === 'shp') return 'shp';
+    if (ext === 'zip') return 'zip';
+    if (ext === 'shp') return 'shp';
     if (clean.includes('featureserver') || clean.includes('mapserver')) return 'arcgis';
     return null;
 }
 
 // ─── Loaders ─────────────────────────────────────────────────────────────────
+async function loadZip(arrayBuffer) {
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const files = Object.keys(zip.files);
+    const gpkgFile = files.find(name => name.toLowerCase().endsWith('.gpkg'));
+    if (gpkgFile) {
+        const inner = await zip.file(gpkgFile).async('arraybuffer');
+        return { format: 'gpkg', data: inner };
+    }
+    const geojsonFile = files.find(name => name.toLowerCase().match(/\.(geojson|json)$/));
+    if (geojsonFile) {
+        const text = await zip.file(geojsonFile).async('text');
+        return { format: 'geojson', data: JSON.parse(text) };
+    }
+    const shpFile = files.find(name => name.toLowerCase().endsWith('.shp'));
+    if (shpFile) {
+        return { format: 'shp', data: arrayBuffer };
+    }
+    throw new Error('Aucun fichier GeoPackage, GeoJSON ou Shapefile trouvé dans le ZIP');
+}
+
 async function loadGpkg(arrayBuffer) {
-    const geoPackage = await GeoPackage.open(new Uint8Array(arrayBuffer));
-    const tables = geoPackage.getFeatureTables();
-    if (tables.length === 0) throw new Error('Aucune table de features trouvée');
+    const geoPackage = await GeoPackage.GeoPackageAPI.open(new Uint8Array(arrayBuffer));
+    const tables = geoPackage.getTables(true);
+    const featureTables = tables.features || [];
+    const tileTables = tables.tiles || [];
+
+    if (featureTables.length === 0) {
+        if (tileTables.length > 0) {
+            throw new Error(`GeoPackage supporte uniquement les données vecteur. Ce GeoPackage contient des tables raster : ${tileTables.join(', ')}`);
+        }
+        throw new Error('Aucune table de features trouvée dans le GeoPackage');
+    }
+
     const allFeatures = [];
-    for (const table of tables)
-        for (const feature of geoPackage.iterateGeoJSONFeatures(table))
+    for (const table of featureTables) {
+        for (const feature of geoPackage.iterateGeoJSONFeatures(table)) {
             if (feature) allFeatures.push(feature);
+        }
+    }
+
+    if (allFeatures.length === 0) {
+        throw new Error('Aucune entité GeoJSON trouvée dans le GeoPackage');
+    }
     return { type: 'FeatureCollection', features: allFeatures };
 }
 
@@ -319,15 +364,32 @@ map.on('load', async () => {
         try {
             setSpinner(true, `Chargement : ${name}…`);
             let geojson;
+            let layerFormat = format;
             if (format === 'arcgis') {
                 geojson = await loadArcGIS(url);
             } else {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const arrayBuffer = await response.arrayBuffer();
-                geojson = format === 'gpkg' ? await loadGpkg(arrayBuffer) : await loadShp(arrayBuffer);
+                if (format === 'zip') {
+                    const result = await loadZip(arrayBuffer);
+                    layerFormat = result.format;
+                    if (layerFormat === 'gpkg') {
+                        geojson = await loadGpkg(result.data);
+                    } else if (layerFormat === 'shp') {
+                        geojson = await loadShp(result.data);
+                    } else if (layerFormat === 'geojson') {
+                        geojson = result.data;
+                    } else {
+                        throw new Error(`Format interne non pris en charge : ${layerFormat}`);
+                    }
+                } else if (format === 'gpkg') {
+                    geojson = await loadGpkg(arrayBuffer);
+                } else {
+                    geojson = await loadShp(arrayBuffer);
+                }
             }
-            addGeoJSONLayer(geojson, name, color, format, true, undefined, borderColor);
+            addGeoJSONLayer(geojson, name, color, layerFormat, true, undefined, borderColor);
             showToast(`✓ ${name} — ${geojson.features.length} entités`);
         } catch (err) {
             console.error(`Erreur chargement ${name}:`, err);
