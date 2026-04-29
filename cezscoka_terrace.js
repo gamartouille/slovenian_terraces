@@ -264,6 +264,9 @@ function setOpacity(id, opacity, label) {
     if (label) label.textContent = Math.round(opacity * 100) + '%';
 }
 
+window.setOpacity = setOpacity;
+window.toggleLayer = toggleLayer;
+
 // ─── Détection du format ──────────────────────────────────────────────────────
 function getFormat(url, forcedType) {
     if (forcedType) return forcedType;
