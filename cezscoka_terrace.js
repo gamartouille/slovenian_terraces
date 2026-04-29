@@ -1,8 +1,8 @@
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
     { url: '/GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
-    { url: '/SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
-    { url: "/GPKG/MNT.zip", name: "MNT" },
+    { url: 'dist/SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
+    { url: "/GPKG/MNT.gpkg", name: "MNT" },
     // { url: 'https://services.arcgis.com/.../FeatureServer/0', name: 'Couche ArcGIS' },
 ];
 
@@ -23,6 +23,9 @@ const TOOLTIP_FIELDS = {
         { key: 'DIRECTION', label: 'Direction'   },
         { section: "CURVATURE" },
         { key: "CURVATURE", label: "Curvature"   },
+        { section: "GEOMETRY" },
+        { key: "height", label: "Height" },
+        { key: "width", label: "Width" }
     ],
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,6 +81,14 @@ function fmt(val) {
     return val;
 }
 
+function getFeatureProperty(props, key) {
+    if (!props || !key) return undefined;
+    if (key in props) return props[key];
+    const lowerKey = key.toLowerCase();
+    const match = Object.keys(props).find(k => k.toLowerCase() === lowerKey);
+    return match ? props[match] : undefined;
+}
+
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
 const tooltip = document.getElementById('tooltip');
 
@@ -92,7 +103,7 @@ function showTooltip(e, layerName, props) {
             } else {
                 html += `<div class="tt-row">
                     <span class="tt-key">${f.label}</span>
-                    <span class="tt-val">${fmt(props[f.key])}</span>
+                    <span class="tt-val">${fmt(getFeatureProperty(props, f.key))}</span>
                 </div>`;
             }
         });
