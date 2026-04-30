@@ -2,6 +2,7 @@
 const AUTOLOAD_FILES = [
     { url: '/GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
     { url: '/SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
+    { url: '/SHPFILE/points.zip', name: 'Points for calculation', color: '#cf1f45', borderColor: '#ffffff' },
     // { url: 'https://services.arcgis.com/.../FeatureServer/0', name: 'Couche ArcGIS' },
 ];
 
