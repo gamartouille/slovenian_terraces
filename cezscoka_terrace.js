@@ -2,7 +2,6 @@
 const AUTOLOAD_FILES = [
     { url: '/GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
     { url: '/SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
-    { url: "/GPKG/MNT.gpkg", name: "MNT" },
     // { url: 'https://services.arcgis.com/.../FeatureServer/0', name: 'Couche ArcGIS' },
 ];
 
@@ -21,11 +20,11 @@ const TOOLTIP_FIELDS = {
         { key: 'SLOPE_MIN',  label: 'Min'         },
         { section: 'DIRECTION' },
         { key: 'DIRECTION', label: 'Direction'   },
-        { section: "CURVATURE" },
+        { section: "CURVATURE (°)" },
         { key: "CURVATURE", label: "Curvature"   },
-        { section: "GEOMETRY" },
+        { section: "GEOMETRY (m)" },
         { key: "height", label: "Height" },
-        { key: "width", label: "Width" }
+        { key: "width", label: "Width" },
     ],
 };
 // ─────────────────────────────────────────────────────────────────────────────
