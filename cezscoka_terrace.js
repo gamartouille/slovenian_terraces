@@ -1,7 +1,7 @@
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
     { url: '/GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
-    { url: 'dist/SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
+    { url: '/SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
     { url: "/GPKG/MNT.gpkg", name: "MNT" },
     // { url: 'https://services.arcgis.com/.../FeatureServer/0', name: 'Couche ArcGIS' },
 ];
