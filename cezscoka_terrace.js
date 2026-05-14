@@ -12,6 +12,7 @@ const AUTOLOAD_FILES = [
 // Si une couche n'est pas listée ici, tous ses champs s'affichent.
 const TOOLTIP_FIELDS = {
     'Steep and flat Parts (Bovec Terrace)': [
+        { key: 'ID_POLY', label: 'ID' },
         { section: 'ALTITUDE (m)' },
         { key: 'ALT_MEAN',   label: 'Mean'     },
         { key: 'ALT_MAX',    label: 'Max'         },
@@ -29,6 +30,7 @@ const TOOLTIP_FIELDS = {
         { key: "width", label: "Length" },
     ],
     ' Polygons Grgaske Terrace': [
+        { key: 'ID_POLY', label: 'ID' },
         { section: 'ALTITUDE (m)' },
         { key: 'MEAN_ALTIT',   label: 'Mean'     },
         { key: 'MAX_ALTITU',    label: 'Max'         },
