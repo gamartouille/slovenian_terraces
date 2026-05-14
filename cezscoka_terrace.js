@@ -1,8 +1,9 @@
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
-    { url: '/GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
-    { url: '/SHPFILE/terraces.zip', name: 'Steep and flat Parts', color: '#e6dd8e', borderColor: '#219ebc' },
-    { url: '/SHPFILE/points.zip', name: 'Points for calculation', color: '#cf1f45', borderColor: '#ffffff' },
+    { url: '/GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Bovec Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
+    { url: '/SHPFILE/terraces.zip', name: 'Steep and flat Parts (Bovec Terrace)', color: '#e6dd8e', borderColor: '#219ebc' },
+    { url: '/SHPFILE/points.zip', name: 'Points for calculation (Bovec Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: false },
+    { url: '/SHPFILE/Polygons.zip', name: ' Polygons Grgaske Terrace', color: '#8ecae6', borderColor: '#219ebc' },
     // { url: 'https://services.arcgis.com/.../FeatureServer/0', name: 'Couche ArcGIS' },
 ];
 
@@ -10,7 +11,7 @@ const AUTOLOAD_FILES = [
 // La clé doit correspondre exactement au nom de la couche (name: ci-dessus).
 // Si une couche n'est pas listée ici, tous ses champs s'affichent.
 const TOOLTIP_FIELDS = {
-    'Steep and flat Parts': [
+    'Steep and flat Parts (Bovec Terrace)': [
         { section: 'ALTITUDE (m)' },
         { key: 'ALT_MEAN',   label: 'Mean'     },
         { key: 'ALT_MAX',    label: 'Max'         },
@@ -25,8 +26,25 @@ const TOOLTIP_FIELDS = {
         { key: "CURVATURE", label: "Curvature"   },
         { section: "GEOMETRY (m)" },
         { key: "height", label: "Height" },
-        { key: "width", label: "Width" },
+        { key: "width", label: "Length" },
     ],
+    ' Polygons Grgaske Terrace': [
+        { section: 'ALTITUDE (m)' },
+        { key: 'MEAN_ALTIT',   label: 'Mean'     },
+        { key: 'MAX_ALTITU',    label: 'Max'         },
+        { key: 'MIN_ALTITU',    label: 'Min'         },
+        { section: 'SLOPE (°)' },
+        { key: 'MEAN_SLOPE', label: 'Mean'     },
+        { key: 'MAX_SLOPE',  label: 'Max'         },
+        { key: 'MIN_SLOPE',  label: 'Min'         },
+        { section: 'DIRECTION' },
+        { key: 'DIRECTION', label: 'Direction'   },
+        { section: "CURVATURE (°)" },
+        { key: "MEAN_CURVA", label: "Curvature"   },
+        { section: "GEOMETRY (m)" },
+        { key: "MBG_Width", label: "Height" },
+        { key: "MBG_Length", label: "Length" },
+    ]
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -200,6 +218,9 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
         filter: ['==', '$type', 'Point'],
         paint: { 'circle-color': color, 'circle-radius': 5,
                  'circle-stroke-width': 1.5, 'circle-stroke-color': '#fff' } });
+    if (!visible) {
+        ['fill','line','circle'].forEach(t => map.setLayoutProperty(id + '-' + t, 'visibility', 'none'));
+    }
 
     // Highlight layer au-dessus de tout
     ensureHighlightLayer();
@@ -274,9 +295,19 @@ function setOpacity(id, opacity, label) {
     map.setPaintProperty(id + '-circle', 'circle-opacity', parseFloat(opacity));
     if (label) label.textContent = Math.round(opacity * 100) + '%';
 }
+function zoomToLayer(name) {
+    const layer = layers.find(l => l.name === name);
+    if (!layer) return;
+
+    const bbox = bboxOfGeoJSON(layer.format === 'arcgis' ? map.getSource(layer.id).serialize().data : map.getSource(layer.id)._data);
+    if (bbox[0] !== Infinity) {
+        map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40, maxZoom: 16 });
+    }
+}
 
 window.setOpacity = setOpacity;
 window.toggleLayer = toggleLayer;
+window.zoomToLayer = zoomToLayer;
 
 // ─── Détection du format ──────────────────────────────────────────────────────
 function getFormat(url, forcedType) {
@@ -371,7 +402,7 @@ map.on('load', async () => {
     }
     setSpinner(true);
     for (let i = 0; i < AUTOLOAD_FILES.length; i++) {
-        const { url, name, type: forcedType, borderColor } = AUTOLOAD_FILES[i];
+        const { url, name, type: forcedType, borderColor, visible = true } = AUTOLOAD_FILES[i];
         const color = COLORS[i % COLORS.length];
         const format = getFormat(url, forcedType);
         if (!format) { showToast(`✗ Format non reconnu : ${name}`, true); continue; }
@@ -403,7 +434,7 @@ map.on('load', async () => {
                     geojson = await loadShp(arrayBuffer);
                 }
             }
-            addGeoJSONLayer(geojson, name, color, layerFormat, true, undefined, borderColor);
+            addGeoJSONLayer(geojson, name, color, layerFormat, visible, undefined, borderColor);
             showToast(`✓ ${name} — ${geojson.features.length} entités`);
         } catch (err) {
             console.error(`Erreur chargement ${name}:`, err);

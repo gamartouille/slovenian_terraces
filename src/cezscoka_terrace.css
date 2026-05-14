@@ -126,3 +126,39 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         #spinner p { font-family: 'DM Mono', monospace; font-size: 12px; color: #aaa; letter-spacing: 0.05em; }
+        
+        #zoom-buttons {
+            position: absolute; top: 10px; left: 10px;
+            display: flex; flex-direction: column; gap: 8px;
+            z-index: 10;
+            background: rgba(15,15,15,0.96);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #2a2a2a;
+        }
+        #zoom-buttons button {
+            appearance: none;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #111;
+            color: #f5f5f0;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            text-align: left;
+            min-width: 180px;
+        }
+        #zoom-buttons button:hover {
+            background: #1a1a1a;
+            border-color: #6aff8e;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            transform: translateY(-1px);
+        }
+        #zoom-buttons button:active {
+            transform: translateY(0);
+            background: #0e0e0e;
+        }
