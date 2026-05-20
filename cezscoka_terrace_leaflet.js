@@ -1,8 +1,9 @@
 ﻿
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
+    { url: '/GEOTIFF/MNT.tif',             name: 'MNT (GeoTIFF)',                    color: '#f7a830', borderColor: '#f7a830', palette: 'spectral' },
     { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)', color: '#250c1200', borderColor: '#250c12fb' },
-    { url: '/GPKG/EMPRISE_TERRACE2.zip',  name: 'Extent Bovec Terrace',              color: '#e6aa8ec4', borderColor: '#eb3700' },
+    { url: '/GPKG/EMPRISE_TERRACE2.zip',  name: 'Extent Bovec Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
     { url: '/SHPFILE/points.zip',          name: 'Points for calculation (Bovec Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: false },
     { url: '/SHPFILE/Polygons.zip',        name: ' Polygons Grgaske Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
 ];
@@ -171,7 +172,8 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
         color:       borderColor || color,
         weight:      isEmprise ? 2.5 : 1.5,
         opacity:     1,
-        fillOpacity: isEmprise ? 0 : opacity
+        fillOpacity: isEmprise ? 0 : opacity,
+        interactive: !isEmprise
     };
     const styleHover = {
         weight:      isEmprise ? 3.5 : 3,
@@ -191,6 +193,7 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
             }),
         style: () => styleNormal,
         onEachFeature: (feature, layer) => {
+            if (isEmprise) return;
             const props = feature.properties || {};
             layer.on({
                 mouseover(e) {
@@ -239,8 +242,9 @@ function drawMNTLegend(min, max, scale) {
 let mntLayer = null;
 let mntLayerEntry = null;
 
-async function loadMNT(arrayBuffer) {
-    const colorscale = document.getElementById('mnt-colorscale').value;
+async function loadMNT(arrayBuffer, forcedColorscale = null) {
+    const colorscale = forcedColorscale || document.getElementById('mnt-colorscale').value;
+    if (forcedColorscale) document.getElementById('mnt-colorscale').value = forcedColorscale;
     setSpinner(true, 'Lecture GeoTIFF…');
     try {
         if (typeof GeoTIFF === 'undefined') throw new Error('GeoTIFF.js non chargé.');
@@ -689,7 +693,7 @@ window.zoomToGrgaske = zoomToGrgaske;
         return;
     }
     for (let i = 0; i < AUTOLOAD_FILES.length; i++) {
-        const { url, name, type: forcedType, borderColor, visible = true } = AUTOLOAD_FILES[i];
+        const { url, name, type: forcedType, borderColor, visible = true, palette } = AUTOLOAD_FILES[i];
         const color = AUTOLOAD_FILES[i].color || COLORS[i % COLORS.length];
         const format = getFormat(url, forcedType);
         if (!format) { showToast(`✗ Format non reconnu : ${name}`, 'error'); continue; }
@@ -697,7 +701,7 @@ window.zoomToGrgaske = zoomToGrgaske;
         try {
             if (format === 'tiff') {
                 const res = await fetch(url); if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                await loadMNT(await res.arrayBuffer());
+                await loadMNT(await res.arrayBuffer(), palette);
             } else if (format === 'arcgis') {
                 const geojson = await loadArcGIS(url);
                 addGeoJSONLayer(geojson, name, color, 'arcgis', visible, undefined, borderColor);
