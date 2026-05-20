@@ -517,6 +517,7 @@ window.toggleLayer = toggleLayer;
 window.setOpacity = setOpacity;
 window.zoomToLayer = zoomToLayer;
 window.removeLayer = removeLayer;
+window.loadFromUrl = loadFromUrl;
 
 // ─── Format detection ─────────────────────────────────────────────────────────
 function getFormat(url, forcedType) {
@@ -676,6 +677,9 @@ function zoomToGrgaske() {
     // Grgaske-Dragovica terrace ~ vallée Soča
     map.flyTo([46.042565, 13.6545], 14, { duration: 1.2 });
 }
+
+window.zoomToBovec = zoomToBovec;
+window.zoomToGrgaske = zoomToGrgaske;
 
 // ─── Autoload ─────────────────────────────────────────────────────────────────
 (async () => {
