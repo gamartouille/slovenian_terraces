@@ -670,11 +670,11 @@ document.getElementById('mnt-input').addEventListener('change', async (e) => {
 // ─── Zoom rapide ─────────────────────────────────────────────────────────────
 function zoomToBovec() {
     // Bovec Terrace ~ Bovec, Slovénie
-    map.flyTo([46.338, 13.552], 14, { duration: 1.2 });
+    map.flyTo([46.318898, 13.555], 14, { duration: 1.2 });
 }
 function zoomToGrgaske() {
     // Grgaske-Dragovica terrace ~ vallée Soča
-    map.flyTo([46.310, 13.578], 14, { duration: 1.2 });
+    map.flyTo([46.042565, 13.6545], 14, { duration: 1.2 });
 }
 
 // ─── Autoload ─────────────────────────────────────────────────────────────────
