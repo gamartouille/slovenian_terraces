@@ -1,10 +1,10 @@
 ﻿
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
+    { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)', color: '#250c1200', borderColor: '#250c12fb' },
     { url: '/GPKG/EMPRISE_TERRACE2.zip',  name: 'Extent Bovec Terrace',              color: '#e6aa8ec4', borderColor: '#eb3700' },
-    { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)', color: '#e6dd8e',   borderColor: '#219ebc' },
     { url: '/SHPFILE/points.zip',          name: 'Points for calculation (Bovec Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: false },
-    { url: '/SHPFILE/Polygons.zip',        name: ' Polygons Grgaske Terrace',         color: '#8ecae6',   borderColor: '#219ebc' },
+    { url: '/SHPFILE/Polygons.zip',        name: ' Polygons Grgaske Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
 ];
 
 const TOOLTIP_FIELDS = {
