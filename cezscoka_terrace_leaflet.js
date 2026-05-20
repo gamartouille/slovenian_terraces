@@ -1,9 +1,9 @@
 ﻿
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
-    { url: '/GEOTIFF/MNT.tif',             name: 'MNT (GeoTIFF)',                    color: '#f7a830', borderColor: '#f7a830', palette: 'spectral' },
+    { url: '/GEOTIFF/MNT.tif',             name: 'MNT BOVEC (GeoTIFF)',                    color: '#f1461b', borderColor: '#f7a830', palette: 'spectral' },
+    { url: '/GEOTIFF/SLOPE_BOVEC.tif',           name: 'SLOPE BOVEC (GeoTIFF)',                    color: '#eb0c4f', borderColor: '#f7a830', palette: 'spectral' },
     { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)', color: '#250c1200', borderColor: '#250c12fb' },
-    { url: '/GPKG/EMPRISE_TERRACE2.zip',  name: 'Extent Bovec Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
     { url: '/SHPFILE/points.zip',          name: 'Points for calculation (Bovec Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: false },
     { url: '/SHPFILE/Polygons.zip',        name: ' Polygons Grgaske Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
 ];
@@ -239,10 +239,9 @@ function drawMNTLegend(min, max, scale) {
 }
 
 // ─── MNT / GeoTIFF — parsing natif via geotiff.js ────────────────────────────
-let mntLayer = null;
-let mntLayerEntry = null;
+let tiffLayers = {}; // { [layerId]: { layer, entry } }
 
-async function loadMNT(arrayBuffer, forcedColorscale = null) {
+async function loadMNT(arrayBuffer, forcedColorscale = null, layerName = 'MNT (GeoTIFF)') {
     const colorscale = forcedColorscale || document.getElementById('mnt-colorscale').value;
     if (forcedColorscale) document.getElementById('mnt-colorscale').value = forcedColorscale;
     setSpinner(true, 'Lecture GeoTIFF…');
@@ -414,33 +413,38 @@ async function loadMNT(arrayBuffer, forcedColorscale = null) {
         }
         ctx.putImageData(imgData, 0, 0);
 
-        // 8. Supprimer l'ancienne couche MNT
-        if (mntLayer) { map.removeLayer(mntLayer); mntLayer = null; }
+        // 8. Supprimer l'ancienne couche du même type
+        const layerId = 'layer-' + layerName.toLowerCase().replace(/\s+/g, '-');
+        if (tiffLayers[layerId]) {
+            const old = tiffLayers[layerId];
+            if (old.layer && map.hasLayer(old.layer)) map.removeLayer(old.layer);
+            if (old.entry) layers = layers.filter(l => l !== old.entry);
+        }
 
         // 9. Afficher via L.imageOverlay (canvas → dataURL)
         const url = canvas.toDataURL('image/png');
-        mntLayer = L.imageOverlay(url, bounds, { opacity: 0.8, interactive: false });
-        mntLayer.addTo(map);
+        const tiffLayer = L.imageOverlay(url, bounds, { opacity: 0.8, interactive: false });
+        tiffLayer.addTo(map);
         map.fitBounds(bounds, { padding: [20, 20] });
-        // Remettre les couches vecteur au-dessus du MNT
+        // Remettre les couches vecteur au-dessus du GeoTIFF
         layers.forEach(l => { if (l.leafletLayer && l.leafletLayer.bringToFront) l.leafletLayer.bringToFront(); });
 
         // 10. Légende
         drawMNTLegend(min, max, scale);
 
         // 11. Enregistrer dans la liste des couches
-        if (mntLayerEntry) layers = layers.filter(l => l !== mntLayerEntry);
-        mntLayerEntry = {
-            id: 'layer-mnt',
-            name: 'MNT (GeoTIFF)',
+        const layerEntry = {
+            id: layerId,
+            name: layerName,
             color: '#f7a830',
             format: 'tiff',
             visible: true,
             opacity: 0.8,
-            leafletLayer: mntLayer,
+            leafletLayer: tiffLayer,
             geojson: null
         };
-        layers.push(mntLayerEntry);
+        layers.push(layerEntry);
+        tiffLayers[layerId] = { layer: tiffLayer, entry: layerEntry };
         updateLayersList();
 
         showToast(`✓ MNT chargé — ${width}×${height}px — alt. ${fmt(min)} → ${fmt(max)} m`, 'success');
@@ -512,7 +516,7 @@ function removeLayer(id) {
     if (idx === -1) return;
     const layer = layers[idx];
     if (map.hasLayer(layer.leafletLayer)) map.removeLayer(layer.leafletLayer);
-    if (layer === mntLayerEntry) { mntLayerEntry = null; mntLayer = null; }
+    if (tiffLayers[id]) delete tiffLayers[id];
     layers.splice(idx, 1);
     updateLayersList();
 }
@@ -626,7 +630,7 @@ async function loadFromUrl() {
             showToast(`✓ ${name} — ${geojson.features.length} entités`, 'success');
         } else if (format === 'tiff') {
             const res = await fetch(url); if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            await loadMNT(await res.arrayBuffer());
+            await loadMNT(await res.arrayBuffer(), null, name);
         } else {
             const res = await fetch(url); if (!res.ok) throw new Error(`HTTP ${res.status}`);
             await processFile(await res.arrayBuffer(), name, format, COLORS[layers.length % COLORS.length], true, null);
@@ -661,10 +665,11 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
 document.getElementById('mnt-input').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setSpinner(true, `Chargement MNT : ${file.name}…`);
+    const layerName = file.name.split('.')[0]; // Extract name without extension
+    setSpinner(true, `Chargement GeoTIFF : ${file.name}…`);
     try {
         const ab = await file.arrayBuffer();
-        await loadMNT(ab);
+        await loadMNT(ab, null, layerName);
     } catch(err) {
         showToast(`✗ ${file.name} : ${err.message}`, 'error');
         setSpinner(false);
@@ -701,7 +706,7 @@ window.zoomToGrgaske = zoomToGrgaske;
         try {
             if (format === 'tiff') {
                 const res = await fetch(url); if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                await loadMNT(await res.arrayBuffer(), palette);
+                await loadMNT(await res.arrayBuffer(), palette, name);
             } else if (format === 'arcgis') {
                 const geojson = await loadArcGIS(url);
                 addGeoJSONLayer(geojson, name, color, 'arcgis', visible, undefined, borderColor);
