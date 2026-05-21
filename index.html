@@ -42,7 +42,7 @@
 
   <!-- Zoom rapide -->
   <div id="zoom-zone">
-    <label>Zoom rapide</label>
+    <label>Quick Zoom</label>
     <div class="zoom-row">
       <button class="btn zoom-btn" onclick="zoomToBovec()">
         <span class="zoom-icon">◎</span> Bovec Terrace
@@ -55,9 +55,9 @@
 
   <!-- Vector upload -->
   <div id="upload-zone">
-    <label>Ajouter une couche vecteur</label>
+    <label>Add Vector Layer</label>
     <div class="upload-row">
-      <button class="btn" onclick="document.getElementById('file-input').click()">📂 Fichier local</button>
+      <button class="btn" onclick="document.getElementById('file-input').click()">📂 Local File</button>
     </div>
     <input type="file" id="file-input" accept=".zip,.gpkg,.shp,.geojson,.json" multiple />
     <div class="upload-row">
@@ -68,7 +68,7 @@
 
   <!-- MNT/GeoTIFF -->
   <div id="mnt-zone">
-    <label>🏔 MNT / GeoTIFF (.tif / .tiff)</label>
+    <label>🏔 DEM / GeoTIFF (.tif / .tiff)</label>
     <div id="mnt-options">
       <select id="mnt-colorscale">
         <option value="terrain">Palette : Terrain</option>
@@ -80,7 +80,7 @@
       </select>
     </div>
     <div class="upload-row" style="margin-top:6px;">
-      <button class="btn" onclick="document.getElementById('mnt-input').click()">📂 Charger MNT</button>
+      <button class="btn" onclick="document.getElementById('mnt-input').click()">📂 Load DEM</button>
     </div>
     <input type="file" id="mnt-input" accept=".tif,.tiff" />
     <div id="mnt-legend">
@@ -93,13 +93,13 @@
   </div>
 
   <div id="layers-section">
-    <div id="layers-label">Couches actives</div>
-    <div id="layers-list"><p style="font-size:11px;color:var(--muted);font-family:var(--mono);">Chargement…</p></div>
+    <div id="layers-label">Active layers</div>
+    <div id="layers-list"><p style="font-size:11px;color:var(--muted);font-family:var(--mono);">Loading…</p></div>
   </div>
 </div>
 
 <div id="toast"></div>
-<div id="spinner"><div id="spinner-ring"></div><div id="spinner-msg">Chargement…</div></div>
+<div id="spinner"><div id="spinner-ring"></div><div id="spinner-msg">Loading…</div></div>
 <div id="tooltip"></div>
 
 <script type="module" src="./cezscoka_terrace_leaflet.js"></script></body>

@@ -6,6 +6,8 @@ const AUTOLOAD_FILES = [
     { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)', color: '#250c1200', borderColor: '#250c12fb' },
     { url: '/SHPFILE/points.zip',          name: 'Points for calculation (Bovec Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: false },
     { url: '/SHPFILE/Polygons.zip',        name: ' Polygons Grgaske Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
+    { url: '/SHPFILE/polygons_prestrel_terrace_V1.zip',        name: ' Polygons Prestrel Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
+
 ];
 
 const TOOLTIP_FIELDS = {
