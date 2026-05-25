@@ -6,7 +6,9 @@ const AUTOLOAD_FILES = [
     { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)', color: '#250c1200', borderColor: '#250c12fb' },
     { url: '/SHPFILE/points.zip',          name: 'Points for calculation (Bovec Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: false },
     { url: '/SHPFILE/Polygons.zip',        name: ' Polygons Grgaske Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
-    { url: '/SHPFILE/polygons_prestrel_terrace_V1.zip',        name: ' Polygons Prestrel Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
+    { url: '/SHPFILE/polygons_prestrel_terrace_V2.zip',        name: 'Steep and flat Parts (Prestreljenik Terrace)',  color: '#8ecae605',   borderColor: '#031b20' },
+    { url: '/GEOTIFF/MNT_PRESTREL.tif',             name: 'MNT PRESTREL (GeoTIFF)',                    color: '#f1461b', borderColor: '#f7a830', palette: 'spectral', visible: false},
+    { url: '/GEOTIFF/SLOPE_PRESTREL.tif',           name: 'SLOPE PRESTREL (GeoTIFF)',                    color: '#eb0c4f', borderColor: '#f7a830', palette: 'spectral' },
 
 ];
 
@@ -26,7 +28,7 @@ const TOOLTIP_FIELDS = {
         { section: 'CURVATURE (°)' },
         { key: 'CURVATURE',  label: 'Curvature' },
         { section: 'GEOMETRY (m)' },
-        { key: 'height',     label: 'Height' },
+        { key: 'height',     label: 'Width' },
         { key: 'width',      label: 'Length' },
     ],
     ' Polygons Grgaske Terrace': [
@@ -44,8 +46,24 @@ const TOOLTIP_FIELDS = {
         { section: 'CURVATURE (°)' },
         { key: 'MEAN_CURVA', label: 'Curvature' },
         { section: 'GEOMETRY (m)' },
-        { key: 'MBG_Width',  label: 'Height' },
+        { key: 'MBG_Width',  label: 'Width' },
         { key: 'MBG_Length', label: 'Length' },
+    ],
+    'Steep and flat Parts (Prestreljenik Terrace)': [
+        { key: 'ID_POLY',    label: 'ID' },
+        { section: 'ALTITUDE (m)' },
+        { key: 'ALT_MEAN',   label: 'Mean' },
+        { key: 'ALT_MAX',    label: 'Max'  },
+        { key: 'ALT_MIN',    label: 'Min'  },
+        { section: 'SLOPE (°)' }, 
+        { key: 'MEAN', label: 'Mean' },
+        { key: 'MAX',  label: 'Max'  },
+        { key: 'MIN',  label: 'Min'  },
+        { section: 'DIRECTION' },
+        { key: 'DIRECTION',  label: 'Direction' }, 
+        { section: 'GEOMETRY (m)' },
+        { key: 'MBG_Width',     label: 'Width' },
+        { key: 'MBG_Length',      label: 'Length' },
     ]
 };
 // ─────────────────────────────────────────────────────────────────────────────
