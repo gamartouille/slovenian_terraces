@@ -171,12 +171,38 @@ document.addEventListener('mousemove', ev => {
     if (tooltip.style.display === 'block') positionTooltip(ev);
 });
 
+// ─── Coloration par pente (seuils variables par terrasse) ──────────────────────
+// Retourne le seuil de pente selon la couche
+function getSlopeThreshold(layerName) {
+    if (layerName.includes('Bovec')) return 8;
+    if (layerName.includes('Prestreljenik')) return 40;
+    if (layerName.includes('Slavnik')) return 30;
+    return 8; // Seuil par défaut
+}
+
+// Retourne le nom du champ contenant la pente moyenne selon la couche
+function getSlopeFieldName(layerName) {
+    if (layerName.includes('Bovec')) return 'SLOPE_MEAN';
+    if (layerName.includes('Prestreljenik')) return 'MEAN'; // Dans section SLOPE
+    if (layerName.includes('Slavnik')) return 'MEAN_SLOPE';
+    return null;
+}
+
+// Retourne une couleur selon la valeur de pente et le seuil approprié pour la couche
+function getColorBySlopeThreshold(slopeValue, layerName) {
+    const slope = parseFloat(slopeValue);
+    const threshold = getSlopeThreshold(layerName);
+    if (isNaN(slope)) return '#cccccc'; // Gris si valeur invalide
+    return slope >= threshold ? '#e74c3c' : '#3498db'; // Rouge si >= seuil, bleu sinon
+}
+
 // ─── Add GeoJSON layer ───────────────────────────────────────────────────────
 // ─── Add GeoJSON layer (Avec Symbologie Graduée Dynamique) ───────────────────
 function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity = 0.55, borderColor) {
     const layerId = 'layer-' + layers.length;
     const isEmprise = name.toLowerCase().includes('extent') || name.toLowerCase().includes('emprise');
     const isSquaresLayer = name.includes('3m squares');
+    const slopeFieldName = getSlopeFieldName(name); // Déterminer le champ de pente
 
     // Configuration initiale de la symbologie de base
     let styleNormal = {
@@ -189,26 +215,46 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
     };
 
     const styleHover = {
-        weight:      isEmprise ? 3.5 : 3,
-        color:       '#ffffff',
-        fillOpacity: isEmprise ? 0.1 : Math.min(opacity + 0.2, 0.85)
+        weight:      isEmprise ? 4.5 : 4,
+        color:       '#FFD700',
+        fillOpacity: isEmprise ? 0.15 : Math.min(opacity + 0.25, 0.9),
+        opacity:     1
     };
 
     // Création de la couche Leaflet principale
     const leafletLayer = L.geoJSON(geojson, {
-        pointToLayer: (feature, latlng) =>
-            L.circleMarker(latlng, {
+        pointToLayer: (feature, latlng) => {
+            const slopeColor = slopeFieldName ? getColorBySlopeThreshold(getFeatureProperty(feature.properties, slopeFieldName), name) : color;
+            return L.circleMarker(latlng, {
                 radius: 5,
-                fillColor: color,
+                fillColor: slopeColor,
                 color: '#fff',
                 weight: 1.5,
                 opacity: 1,
                 fillOpacity: 0.9
-            }),
-        style: () => styleNormal,
+            });
+        },
+        style: (feature) => {
+            // Si c'est une couche de terrasse avec un champ de pente, appliquer la coloration par pente
+            if (slopeFieldName && feature.properties) {
+                const slopeColor = getColorBySlopeThreshold(getFeatureProperty(feature.properties, slopeFieldName), name);
+                return {
+                    ...styleNormal,
+                    fillColor: slopeColor,
+                    color: slopeColor
+                };
+            }
+            return styleNormal;
+        },
         onEachFeature: (feature, layer) => {
             if (isEmprise) return;
             const props = feature.properties || {};
+            
+            // Stocker la couleur initiale basée sur la pente (remplissage ET contour)
+            let initialColor = slopeFieldName ? getColorBySlopeThreshold(getFeatureProperty(props, slopeFieldName), name) : (styleNormal.fillColor || color);
+            layer.options.fillColor = initialColor;
+            layer.options.strokeColor = initialColor; // Stocker aussi la couleur du contour
+            
             layer.on({
                 mouseover(e) {
                     const l = e.target;
@@ -218,11 +264,12 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
                 },
                 mouseout(e) {
                     const l = e.target;
-                    // Conserve la couleur graduée individuelle ou la couleur par défaut lors du mouseout
+                    // Restaure la couleur basée sur la pente (remplissage ET contour)
                     if (l.setStyle) {
                         l.setStyle({
                             ...styleNormal,
-                            fillColor: l.options.fillColor || color
+                            fillColor: l.options.fillColor || color,
+                            color: l.options.strokeColor || color
                         });
                     }
                     hideTooltip();
@@ -244,9 +291,7 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
     updateLayersList();
 
     // ─── Logique Spécifique pour la couche "3m squares" ───
-    if (isSquaresLayer && geojson.features.length > 0) {
-        setupGraduatedSymbologyMenu(layerId, geojson, leafletLayer, styleNormal);
-    }
+    // (Panneau légende intégré au panneau principal — voir HTML/CSS)
 }
 
 // Génère le menu déroulant et gère les événements de changement de champ
@@ -646,14 +691,28 @@ function getFormat(url, forcedType) {
 
 // ─── Loaders ─────────────────────────────────────────────────────────────────
 async function loadZip(arrayBuffer) {
+    console.log(`[loadZip] Début du décompressage ZIP`);
     const zip = await JSZip.loadAsync(arrayBuffer);
     const files = Object.keys(zip.files);
+    console.log(`[loadZip] Fichiers dans le ZIP:`, files);
     const gpkgFile = files.find(n => n.toLowerCase().endsWith('.gpkg'));
-    if (gpkgFile) { const inner = await zip.file(gpkgFile).async('arraybuffer'); return { format: 'gpkg', data: inner }; }
+    if (gpkgFile) { 
+        console.log(`[loadZip] Trouvé GPKG: ${gpkgFile}`);
+        const inner = await zip.file(gpkgFile).async('arraybuffer'); 
+        return { format: 'gpkg', data: inner }; 
+    }
     const geojsonFile = files.find(n => n.toLowerCase().match(/\.(geojson|json)$/));
-    if (geojsonFile) { const text = await zip.file(geojsonFile).async('text'); return { format: 'geojson', data: JSON.parse(text) }; }
+    if (geojsonFile) { 
+        console.log(`[loadZip] Trouvé GeoJSON: ${geojsonFile}`);
+        const text = await zip.file(geojsonFile).async('text'); 
+        return { format: 'geojson', data: JSON.parse(text) }; 
+    }
     const shpFile = files.find(n => n.toLowerCase().endsWith('.shp'));
-    if (shpFile) return { format: 'shp', data: arrayBuffer };
+    if (shpFile) {
+        console.log(`[loadZip] Trouvé SHP: ${shpFile}, retournant le ZIP complet à shp()`);
+        return { format: 'shp', data: arrayBuffer };
+    }
+    console.error(`[loadZip] Aucun format reconnu dans les fichiers:`, files);
     throw new Error('Aucun fichier GeoPackage, GeoJSON ou Shapefile trouvé dans le ZIP');
 }
 
@@ -671,10 +730,20 @@ async function loadGpkg(arrayBuffer) {
 }
 
 async function loadShp(arrayBuffer) {
-    const result = await shp(arrayBuffer);
-    if (Array.isArray(result))
-        return { type: 'FeatureCollection', features: result.flatMap(fc => fc.features || []) };
-    return result;
+    console.log(`[loadShp] Appel de shp() avec arrayBuffer de ${arrayBuffer.byteLength} bytes`);
+    try {
+        const result = await shp(arrayBuffer);
+        console.log(`[loadShp] shp() retourné:`, result);
+        if (Array.isArray(result)) {
+            console.log(`[loadShp] Résultat est un Array avec ${result.length} items`);
+            return { type: 'FeatureCollection', features: result.flatMap(fc => fc.features || []) };
+        }
+        console.log(`[loadShp] Résultat est un object:`, result.type, result.features ? result.features.length + ' features' : 'no features');
+        return result;
+    } catch (err) {
+        console.error(`[loadShp] Erreur shp():`, err);
+        throw err;
+    }
 }
 
 async function loadArcGIS(url) {
@@ -696,27 +765,41 @@ async function loadArcGIS(url) {
 
 // ─── Generic file loader ──────────────────────────────────────────────────────
 async function processFile(arrayBuffer, name, format, color, visible, borderColor) {
+    console.log(`[processFile] Début pour ${name}, format: ${format}, arrayBuffer.byteLength: ${arrayBuffer.byteLength}`);
     let geojson, layerFormat = format;
-    if (format === 'arcgis') {
-        geojson = await loadArcGIS(name); // name = url here
-    } else if (format === 'zip') {
-        const result = await loadZip(arrayBuffer);
-        layerFormat = result.format;
-        if (layerFormat === 'gpkg')    geojson = await loadGpkg(result.data);
-        else if (layerFormat === 'shp') geojson = await loadShp(result.data);
-        else if (layerFormat === 'geojson') geojson = result.data;
-        else throw new Error(`Format interne non pris en charge : ${layerFormat}`);
-    } else if (format === 'gpkg') {
-        geojson = await loadGpkg(arrayBuffer);
-    } else if (format === 'shp') {
-        geojson = await loadShp(arrayBuffer);
-    } else if (format === 'geojson') {
-        geojson = JSON.parse(new TextDecoder().decode(arrayBuffer));
-    } else {
-        throw new Error('Format non reconnu');
+    try {
+        if (format === 'arcgis') {
+            console.log(`[processFile] loadArcGIS...`);
+            geojson = await loadArcGIS(name); // name = url here
+        } else if (format === 'zip') {
+            console.log(`[processFile] loadZip...`);
+            const result = await loadZip(arrayBuffer);
+            console.log(`[processFile] loadZip résultat:`, result);
+            layerFormat = result.format;
+            if (layerFormat === 'gpkg')    geojson = await loadGpkg(result.data);
+            else if (layerFormat === 'shp') geojson = await loadShp(result.data);
+            else if (layerFormat === 'geojson') geojson = result.data;
+            else throw new Error(`Format interne non pris en charge : ${layerFormat}`);
+        } else if (format === 'gpkg') {
+            console.log(`[processFile] loadGpkg...`);
+            geojson = await loadGpkg(arrayBuffer);
+        } else if (format === 'shp') {
+            console.log(`[processFile] loadShp...`);
+            geojson = await loadShp(arrayBuffer);
+        } else if (format === 'geojson') {
+            console.log(`[processFile] Parsing JSON...`);
+            geojson = JSON.parse(new TextDecoder().decode(arrayBuffer));
+        } else {
+            throw new Error('Format non reconnu');
+        }
+        console.log(`[processFile] geojson chargé, features:`, geojson.features ? geojson.features.length : 'null');
+        addGeoJSONLayer(geojson, name, color, layerFormat, visible, undefined, borderColor);
+        console.log(`[processFile] ✓ addGeoJSONLayer appelée`);
+        showToast(`✓ ${name} — ${geojson.features.length} entités`, 'success');
+    } catch (err) {
+        console.error(`[processFile] Erreur:`, err);
+        throw err;
     }
-    addGeoJSONLayer(geojson, name, color, layerFormat, visible, undefined, borderColor);
-    showToast(`✓ ${name} — ${geojson.features.length} entités`, 'success');
 }
 
 // ─── URL loader ──────────────────────────────────────────────────────────────
@@ -747,39 +830,24 @@ async function loadFromUrl() {
 }
 
 // ─── File input handlers ──────────────────────────────────────────────────────
-document.getElementById('file-input').addEventListener('change', async (e) => {
-    const files = [...e.target.files];
-    for (const file of files) {
-        const ext = file.name.split('.').pop().toLowerCase();
-        const format = ext === 'gpkg' ? 'gpkg' : ext === 'zip' ? 'zip' : ext === 'shp' ? 'shp' : (ext === 'geojson' || ext === 'json') ? 'geojson' : null;
-        if (!format) { showToast(`✗ Format non reconnu : ${file.name}`, 'error'); continue; }
-        setSpinner(true, `Chargement : ${file.name}…`);
+// Gestionnaire pour mnt-input (caché) - si l'élément existe
+const mntInput = document.getElementById('mnt-input');
+if (mntInput) {
+    mntInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const layerName = file.name.split('.')[0];
+        setSpinner(true, `Chargement GeoTIFF : ${file.name}…`);
         try {
             const ab = await file.arrayBuffer();
-            await processFile(ab, file.name.split('.')[0], format, COLORS[layers.length % COLORS.length], true, null);
+            await loadMNT(ab, null, layerName);
         } catch(err) {
             showToast(`✗ ${file.name} : ${err.message}`, 'error');
-        } finally {
             setSpinner(false);
         }
-    }
-    e.target.value = '';
-});
-
-document.getElementById('mnt-input').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const layerName = file.name.split('.')[0]; // Extract name without extension
-    setSpinner(true, `Chargement GeoTIFF : ${file.name}…`);
-    try {
-        const ab = await file.arrayBuffer();
-        await loadMNT(ab, null, layerName);
-    } catch(err) {
-        showToast(`✗ ${file.name} : ${err.message}`, 'error');
-        setSpinner(false);
-    }
-    e.target.value = '';
-});
+        e.target.value = '';
+    });
+}
 
 // ─── Zoom rapide ─────────────────────────────────────────────────────────────
 function zoomToBovec() {
@@ -801,6 +869,7 @@ window.zoomToSlavnik = zoomToSlavnik;
 
 // ─── Autoload ─────────────────────────────────────────────────────────────────
 (async () => {
+    console.log('[Autoload] Début du chargement, AUTOLOAD_FILES.length:', AUTOLOAD_FILES.length);
     if (AUTOLOAD_FILES.length === 0) {
         document.getElementById('layers-list').innerHTML =
             '<p style="font-size:11px;color:var(--muted);font-family:var(--mono);">Aucun fichier configuré.</p>';
@@ -810,24 +879,35 @@ window.zoomToSlavnik = zoomToSlavnik;
         const { url, name, type: forcedType, borderColor, visible = true, palette } = AUTOLOAD_FILES[i];
         const color = AUTOLOAD_FILES[i].color || COLORS[i % COLORS.length];
         const format = getFormat(url, forcedType);
+        console.log(`[Autoload] Couche ${i+1}: ${name}, format: ${format}, url: ${url}`);
         if (!format) { showToast(`✗ Format non reconnu : ${name}`, 'error'); continue; }
         setSpinner(true, `Chargement : ${name}…`);
         try {
             if (format === 'tiff') {
+                console.log(`[Autoload] Chargement MNT: ${name}`);
                 const res = await fetch(url); if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 await loadMNT(await res.arrayBuffer(), palette, name);
             } else if (format === 'arcgis') {
+                console.log(`[Autoload] Chargement ArcGIS: ${name}`);
                 const geojson = await loadArcGIS(url);
                 addGeoJSONLayer(geojson, name, color, 'arcgis', visible, undefined, borderColor);
                 showToast(`✓ ${name} — ${geojson.features.length} entités`, 'success');
             } else {
-                const res = await fetch(url); if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                await processFile(await res.arrayBuffer(), name, format, color, visible, borderColor);
+                console.log(`[Autoload] Chargement fichier ${format}: ${name}`);
+                const res = await fetch(url); 
+                console.log(`[Autoload] Fetch ${url}: ${res.status} ${res.statusText}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const ab = await res.arrayBuffer();
+                console.log(`[Autoload] ArrayBuffer reçu: ${ab.byteLength} bytes`);
+                await processFile(ab, name, format, color, visible, borderColor);
+                console.log(`[Autoload] ✓ Chargé: ${name}`);
             }
         } catch(err) {
             console.error(`Erreur chargement ${name}:`, err);
             showToast(`✗ ${name} : ${err.message}`, 'error');
         }
     }
+    console.log('[Autoload] Fin du chargement, layers.length:', layers.length);
     setSpinner(false);
+    updateLayersList();
 })();

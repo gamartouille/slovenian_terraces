@@ -25,7 +25,7 @@
   /* ── Panel lateral ── */
   #panel {
     position: absolute; top: 16px; left: 16px; z-index: 1000;
-    width: 300px;
+    width: 380px;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -72,20 +72,7 @@
   .zoom-btn:hover { background: var(--accent); color: #fff; }
   .zoom-icon { font-size: 12px; line-height: 1; }
 
-  #upload-zone {
-    margin: 12px 12px 0;
-    border: 1.5px dashed var(--border);
-    border-radius: 7px;
-    padding: 10px 12px;
-    display: flex; flex-direction: column; gap: 6px;
-    background: var(--panel2);
-    flex-shrink: 0;
-  }
-  #upload-zone label {
-    font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em;
-  }
-  .upload-row { display: flex; gap: 6px; }
-  #file-input { display: none; }
+  /* Buttons and inputs */
   .btn {
     padding: 6px 12px; border: 1px solid var(--border); border-radius: 5px;
     background: var(--panel); color: var(--text);
@@ -96,40 +83,33 @@
   .btn:hover { background: var(--panel2); border-color: var(--accent); color: var(--accent); }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .btn.primary:hover { background: #4a6af0; }
-  #url-input {
-    flex: 1; padding: 6px 8px;
-    background: var(--panel); border: 1px solid var(--border); border-radius: 5px;
-    color: var(--text); font-size: 11px; font-family: var(--mono);
-    outline: none;
-  }
-  #url-input:focus { border-color: var(--accent); }
-  #url-input::placeholder { color: var(--muted); }
+  .upload-row { display: flex; gap: 6px; }
 
-  /* MNT section */
-  #mnt-zone {
-    margin: 8px 12px 0;
-    border: 1.5px dashed #f7a83055;
+  /* Slope Legend */
+  #slope-legend-zone {
+    margin: 12px 12px 0;
+    border: 1px solid var(--border);
     border-radius: 7px;
-    padding: 10px 12px;
-    background: #1e1a12;
+    padding: 8px 12px;
+    background: var(--panel2);
     flex-shrink: 0;
   }
-  #mnt-zone label {
-    font-size: 11px; color: var(--accent2); font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em;
+  #slope-legend-zone label {
+    font-size: 10px; color: var(--muted); font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 8px;
   }
-  #mnt-options { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
-  #mnt-options select {
-    padding: 5px 8px; background: var(--panel); border: 1px solid #f7a83055; border-radius: 5px;
-    color: var(--text); font-size: 11px; font-family: var(--mono); outline: none;
+  #slope-legend {
+    display: flex; flex-direction: column; gap: 6px;
   }
-  #mnt-legend {
-    margin-top: 8px; display: none;
-    border-radius: 5px; overflow: hidden;
+  .slope-item {
+    display: flex; align-items: center; gap: 8px;
   }
-  #mnt-legend canvas { width: 100%; height: 14px; display: block; }
-  #mnt-legend-labels {
-    display: flex; justify-content: space-between;
-    font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 2px;
+  .slope-color {
+    width: 24px; height: 16px; border-radius: 3px; border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .slope-label {
+    font-size: 11px; color: var(--text);
   }
 
   /* Layers list */
