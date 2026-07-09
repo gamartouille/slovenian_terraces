@@ -10,7 +10,6 @@ const AUTOLOAD_FILES = [
 
 const TOOLTIP_FIELDS = {
     'Steep and flat Parts (Bovec Terrace)': [
-        { key: 'ID_POLY',    label: 'ID' },
         { section: 'ALTITUDE (m)' },
         { key: 'ALT_MEAN',   label: 'Mean' },
         { key: 'ALT_MAX',    label: 'Max'  },
