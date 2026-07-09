@@ -1,14 +1,10 @@
 ﻿
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
-    { url: '/GEOTIFF/MNT.tif',             name: 'MNT BOVEC (GeoTIFF)',                    color: '#f1461b', borderColor: '#f7a830', palette: 'spectral' },
-    { url: '/GEOTIFF/SLOPE_BOVEC.tif',           name: 'SLOPE BOVEC (GeoTIFF)',                    color: '#eb0c4f', borderColor: '#f7a830', palette: 'spectral' },
-    { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)', color: '#250c1200', borderColor: '#250c12fb' },
+    { url: '/SHPFILE/terraces.zip',        name: 'Steep and flat Parts (Bovec Terrace)',  color: '#cf1f45',   borderColor: '#ffffff', visible: true },
     { url: '/SHPFILE/points.zip',          name: 'Points for calculation (Bovec Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: false },
-    { url: '/SHPFILE/Polygons.zip',        name: ' Polygons Grgaske Terrace',  color: '#8ecae605',   borderColor: '#219ebc' },
-    { url: '/SHPFILE/polygons_prestrel_terrace_V2.zip',        name: 'Steep and flat Parts (Prestreljenik Terrace)',  color: '#8ecae605',   borderColor: '#031b20' },
-    { url: '/GEOTIFF/MNT_PRESTREL.tif',             name: 'MNT PRESTREL (GeoTIFF)',                    color: '#f1461b', borderColor: '#f7a830', palette: 'spectral', visible: false},
-    { url: '/GEOTIFF/SLOPE_PRESTREL.tif',           name: 'SLOPE PRESTREL (GeoTIFF)',                    color: '#eb0c4f', borderColor: '#f7a830', palette: 'spectral' },
+    { url: '/SHPFILE/polygons_prestrel_terrace_V2.zip',        name: 'Steep and flat Parts (Prestreljenik Terrace)', color: '#cf1f45', borderColor: '#ffffff', visible: true },
+    { url: '/SHPFILE/slavnik_polygons.zip',        name: 'Steep and flat Parts (Slavnik Terrace)',  color: '#cf1f45',   borderColor: '#ffffff', visible: true },
 
 ];
 
@@ -31,24 +27,6 @@ const TOOLTIP_FIELDS = {
         { key: 'height',     label: 'Width' },
         { key: 'width',      label: 'Length' },
     ],
-    ' Polygons Grgaske Terrace': [
-        { key: 'ID_POLY',    label: 'ID' },
-        { section: 'ALTITUDE (m)' },
-        { key: 'MEAN_ALTIT', label: 'Mean' },
-        { key: 'MAX_ALTITU', label: 'Max'  },
-        { key: 'MIN_ALTITU', label: 'Min'  },
-        { section: 'SLOPE (°)' },
-        { key: 'MEAN_SLOPE', label: 'Mean' },
-        { key: 'MAX_SLOPE',  label: 'Max'  },
-        { key: 'MIN_SLOPE',  label: 'Min'  },
-        { section: 'DIRECTION' },
-        { key: 'DIRECTION',  label: 'Direction' },
-        { section: 'CURVATURE (°)' },
-        { key: 'MEAN_CURVA', label: 'Curvature' },
-        { section: 'GEOMETRY (m)' },
-        { key: 'MBG_Width',  label: 'Width' },
-        { key: 'MBG_Length', label: 'Length' },
-    ],
     'Steep and flat Parts (Prestreljenik Terrace)': [
         { key: 'ID_POLY',    label: 'ID' },
         { section: 'ALTITUDE (m)' },
@@ -64,7 +42,18 @@ const TOOLTIP_FIELDS = {
         { section: 'GEOMETRY (m)' },
         { key: 'MBG_Width',     label: 'Width' },
         { key: 'MBG_Length',      label: 'Length' },
-    ]
+    ],
+    'Steep and flat Parts (Slavnik Terrace)': [
+        { key: 'ID_POLY',    label: 'ID' },
+        { section: 'ALTITUDE (m)' },
+        { key: 'MEAN_ALTIT',   label: 'Mean' },
+        { key: 'MAX_ALTITU',    label: 'Max'  },
+        { key: 'MIN_ALTITU',    label: 'Min'  },
+        { section: 'SLOPE (°)' },
+        { key: 'MEAN_SLOPE', label: 'Mean' },
+        { key: 'MAX_SLOPE',  label: 'Max'  },
+        { key: 'MIN_SLOPE',  label: 'Min'  },
+    ],
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -183,11 +172,14 @@ document.addEventListener('mousemove', ev => {
 });
 
 // ─── Add GeoJSON layer ───────────────────────────────────────────────────────
+// ─── Add GeoJSON layer (Avec Symbologie Graduée Dynamique) ───────────────────
 function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity = 0.55, borderColor) {
     const layerId = 'layer-' + layers.length;
     const isEmprise = name.toLowerCase().includes('extent') || name.toLowerCase().includes('emprise');
+    const isSquaresLayer = name.includes('3m squares');
 
-    const styleNormal = {
+    // Configuration initiale de la symbologie de base
+    let styleNormal = {
         fillColor:   isEmprise ? 'transparent' : color,
         color:       borderColor || color,
         weight:      isEmprise ? 2.5 : 1.5,
@@ -195,12 +187,14 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
         fillOpacity: isEmprise ? 0 : opacity,
         interactive: !isEmprise
     };
+
     const styleHover = {
         weight:      isEmprise ? 3.5 : 3,
         color:       '#ffffff',
         fillOpacity: isEmprise ? 0.1 : Math.min(opacity + 0.2, 0.85)
     };
 
+    // Création de la couche Leaflet principale
     const leafletLayer = L.geoJSON(geojson, {
         pointToLayer: (feature, latlng) =>
             L.circleMarker(latlng, {
@@ -224,7 +218,13 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
                 },
                 mouseout(e) {
                     const l = e.target;
-                    if (l.setStyle) l.setStyle(styleNormal);
+                    // Conserve la couleur graduée individuelle ou la couleur par défaut lors du mouseout
+                    if (l.setStyle) {
+                        l.setStyle({
+                            ...styleNormal,
+                            fillColor: l.options.fillColor || color
+                        });
+                    }
                     hideTooltip();
                 },
                 mousemove(e) { showTooltip(e, name, props); }
@@ -239,8 +239,92 @@ function addGeoJSONLayer(geojson, name, color, format, visible = true, opacity =
         map.fitBounds([[bbox[1], bbox[0]], [bbox[3], bbox[2]]], { padding: [40, 40], maxZoom: 16 });
     }
 
+    // Sauvegarde dans le registre des couches globales
     layers.push({ id: layerId, name, color: isEmprise ? borderColor || color : color, format, visible, opacity, borderColor, leafletLayer, geojson });
     updateLayersList();
+
+    // ─── Logique Spécifique pour la couche "3m squares" ───
+    if (isSquaresLayer && geojson.features.length > 0) {
+        setupGraduatedSymbologyMenu(layerId, geojson, leafletLayer, styleNormal);
+    }
+}
+
+// Génère le menu déroulant et gère les événements de changement de champ
+function setupGraduatedSymbologyMenu(layerId, geojson, leafletLayer, baseStyle) {
+    // 1. Extraire les champs numériques de la première entité disponible
+    const firstProps = geojson.features[0].properties;
+    const numericFields = Object.keys(firstProps).filter(key => {
+        const val = firstProps[key];
+        return typeof val === 'number' && key !== 'OID' && key !== 'TARGET_FID' && key !== 'ORIG_FID';
+    });
+
+    // 2. Créer ou injecter le conteneur du menu dans l'interface utilisateur
+    // Vérifie si le panneau de contrôle existe, sinon l'ajoute au body
+    let container = document.getElementById('graduated-panel');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'graduated-panel';
+        container.style = 'position:absolute; top:10px; right:50px; z-index:1000; background:white; padding:10px; border-radius:5px; box-shadow:0 0 15px rgba(0,0,0,0.2); font-family:sans-serif; font-size:12px;';
+        document.body.appendChild(container);
+    }
+
+    // 3. Construire le HTML du sélecteur
+    container.innerHTML = `
+        <div style="font-weight:bold; margin-bottom:5px;">Symbologie Graduée (3m squares)</div>
+        <select id="select-graduated-field" style="width:100%; padding:4px; border-radius:3px;">
+            <option value="">-- Sélectionner un champ --</option>
+            ${numericFields.map(f => `<option value="${f}">${f}</option>`).join('')}
+        </select>
+    `;
+
+    // 4. Écouter le changement de valeur du menu déroulant
+    document.getElementById('select-graduated-field').addEventListener('change', (e) => {
+        const selectedField = e.target.value;
+        applyGraduatedSymbology(geojson, leafletLayer, selectedField, baseStyle);
+    });
+}
+
+// Applique la rampe de couleur sur la couche vectorielle
+function applyGraduatedSymbology(geojson, leafletLayer, field, baseStyle) {
+    if (!field) {
+        // Si aucun champ n'est sélectionné, réinitialiser avec le style par défaut
+        leafletLayer.eachLayer(layer => {
+            layer.setStyle({ fillColor: baseStyle.fillColor, fillOpacity: baseStyle.fillOpacity });
+            layer.options.fillColor = baseStyle.fillColor; // Reset mémoire interne
+        });
+        return;
+    }
+
+    // 1. Collecter toutes les valeurs du champ sélectionné pour calculer le Min et le Max
+    const values = geojson.features
+        .map(f => parseFloat(f.properties[field]))
+        .filter(v => !isNaN(v));
+
+    if (values.length === 0) return;
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    // 2. Définir une échelle de couleurs Chroma (ex: 'YlOrRd' ou 'Viridis' selon vos préférences)
+    // Rend les petites valeurs claires/jaunes et les valeurs élevées foncées/rouges
+    const colorScale = chroma.scale('YlOrRd').domain([min, max]);
+
+    // 3. Mettre à jour individuellement le style de chaque carré de la carte
+    leafletLayer.eachLayer(layer => {
+        const val = parseFloat(layer.feature.properties[field]);
+        
+        if (!isNaN(val)) {
+            const calculatedColor = colorScale(val).hex();
+            
+            layer.setStyle({
+                fillColor: calculatedColor,
+                fillOpacity: 0.75 // Augmentation légère de l'opacité pour mieux apprécier le dégradé
+            });
+            
+            // Stocker la couleur calculée dans les options pour éviter qu'elle ne disparaisse au mouseout
+            layer.options.fillColor = calculatedColor;
+        }
+    });
 }
 
 // ─── MNT légende ─────────────────────────────────────────────────────────────
@@ -702,13 +786,18 @@ function zoomToBovec() {
     // Bovec Terrace ~ Bovec, Slovénie
     map.flyTo([46.318898, 13.555], 14, { duration: 1.2 });
 }
-function zoomToGrgaske() {
-    // Grgaske-Dragovica terrace ~ vallée Soča
-    map.flyTo([46.042565, 13.6545], 14, { duration: 1.2 });
+function zoomToPresteljenik() {
+    // Prestreljenik Terrace ~ vallée Soča
+    map.flyTo([46.3609, 13.4700], 16, { duration: 1.2 });
+}
+function zoomToSlavnik() {
+    // Slavnik ~ Slovénie
+    map.flyTo([45.4923, 14.0539], 14, { duration: 1.2 });
 }
 
 window.zoomToBovec = zoomToBovec;
-window.zoomToGrgaske = zoomToGrgaske;
+window.zoomToPresteljenik = zoomToPresteljenik;
+window.zoomToSlavnik = zoomToSlavnik;
 
 // ─── Autoload ─────────────────────────────────────────────────────────────────
 (async () => {

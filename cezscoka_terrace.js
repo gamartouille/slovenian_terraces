@@ -1,4 +1,4 @@
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
+﻿// ─── CONFIG ───────────────────────────────────────────────────────────────────
 const AUTOLOAD_FILES = [
     { url: '/GPKG/EMPRISE_TERRACE2.zip', name: 'Extent Bovec Terrace', color: '#e6aa8ec4', borderColor: '#eb3700' },
     { url: '/SHPFILE/terraces.zip', name: 'Steep and flat Parts (Bovec Terrace)', color: '#e6dd8e', borderColor: '#219ebc' },
